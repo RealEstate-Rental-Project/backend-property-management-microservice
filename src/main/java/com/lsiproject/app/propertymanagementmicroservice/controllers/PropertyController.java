@@ -51,7 +51,6 @@ public class PropertyController {
 
             return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
         } catch (Exception e) {
-            // Log the exception (e.g., blockchain transaction failure)
             System.err.println("Property creation failed: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .build();
