@@ -10,23 +10,26 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Custom implementation of UserDetails that holds user information
- * extracted directly from the JWT claims (Stateless).
- * It avoids querying a database for user details.
+ * Représente l'utilisateur authentifié.
+ * Dans ce modèle Web3, l'adresse du portefeuille est l'identifiant principal (Username / Subject).
  */
 public class UserPrincipal implements UserDetails {
 
     private final Long idUser;
-    private final String walletAddress;
+    private final String walletAddress; // Deviendra le 'username' de UserDetails
     private final Collection<? extends GrantedAuthority> authorities;
 
     public UserPrincipal(Long idUser, String walletAddress, Set<String> roles) {
         this.idUser = idUser;
         this.walletAddress = walletAddress;
+
+        // Convertit les rôles (ex: "TENANT", "LANDLORD") en autorités Spring Security (ex: "ROLE_TENANT")
         this.authorities = roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
                 .collect(Collectors.toList());
     }
+
+    // --- Getters spécifiques pour l'application ---
 
     public Long getIdUser() {
         return idUser;
@@ -36,7 +39,7 @@ public class UserPrincipal implements UserDetails {
         return walletAddress;
     }
 
-    // --- UserDetails Interface Implementation (Required by Spring Security) ---
+    // --- Implémentation des méthodes de UserDetails ---
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -45,12 +48,14 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public String getPassword() {
-        return null; // Not applicable for stateless token authentication
+        // Non pertinent dans une architecture sans état (stateless) basée sur JWT
+        return null;
     }
 
     @Override
     public String getUsername() {
-        return walletAddress; // Using wallet address as the primary identifier (username)
+        // Le walletAddress devient l'identifiant principal (le Subject du JWT)
+        return walletAddress;
     }
 
     @Override

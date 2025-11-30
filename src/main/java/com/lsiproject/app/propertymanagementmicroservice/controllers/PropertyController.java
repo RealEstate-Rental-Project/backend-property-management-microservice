@@ -73,6 +73,8 @@ public class PropertyController {
             PropertyResponseDTO newResponseDto = propertyMapper.toDto(prop);
             responseDto.add(newResponseDto);
         }
+
+        System.out.println(responseDto);
         return ResponseEntity.ok(responseDto);
     }
 
