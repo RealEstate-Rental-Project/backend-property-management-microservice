@@ -1,18 +1,14 @@
 package com.lsiproject.app.propertymanagementmicroservice.services;
 
 import com.lsiproject.app.propertymanagementmicroservice.UpdateDTOs.PropertyUpdateDTO;
-import com.lsiproject.app.propertymanagementmicroservice.CreationDTOs.RoomCreationDTO;
 import com.lsiproject.app.propertymanagementmicroservice.Enums.TypeOfRental;
 import com.lsiproject.app.propertymanagementmicroservice.contract.RealEstateRental;
 import com.lsiproject.app.propertymanagementmicroservice.CreationDTOs.PropertyCreationDTO;
 import com.lsiproject.app.propertymanagementmicroservice.entities.Property;
-import com.lsiproject.app.propertymanagementmicroservice.entities.Room;
-import com.lsiproject.app.propertymanagementmicroservice.entities.RoomImage;
 import com.lsiproject.app.propertymanagementmicroservice.repository.PropertyRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.tx.gas.StaticGasProvider;
@@ -86,24 +82,24 @@ public class PropertyService {
 
         // Save preliminary to get ID
         Property savedProperty = propertyRepository.save(property);
-        Long localPropertyId = savedProperty.getIdProperty();
-
-        // 2. Blockchain Transaction
-        var receipt = rentalContract.listProperty(
-                dto.fullAddress(),
-                dto.description(),
-                BigInteger.valueOf(dto.rentPerMonth()),
-                BigInteger.valueOf(dto.securityDeposit())
-        ).send();
-
-        var events = rentalContract.getPropertyListedEvents(receipt);
-        if (events.isEmpty()) {
-            propertyRepository.delete(savedProperty);
-            throw new RuntimeException("Blockchain event missing - rollback");
-        }
-
-        Long onChainId = events.get(0).propertyId.longValue();
-        savedProperty.setOnChainId(onChainId);
+//        Long localPropertyId = savedProperty.getIdProperty();
+//
+//        // 2. Blockchain Transaction
+//        var receipt = rentalContract.listProperty(
+//                dto.fullAddress(),
+//                dto.description(),
+//                BigInteger.valueOf(dto.rentPerMonth()),
+//                BigInteger.valueOf(dto.securityDeposit())
+//        ).send();
+//
+//        var events = rentalContract.getPropertyListedEvents(receipt);
+//        if (events.isEmpty()) {
+//            propertyRepository.delete(savedProperty);
+//            throw new RuntimeException("Blockchain event missing - rollback");
+//        }
+//
+//        Long onChainId = events.get(0).propertyId.longValue();
+//        savedProperty.setOnChainId(onChainId);
 
         return propertyRepository.save(savedProperty);
     }
@@ -134,14 +130,14 @@ public class PropertyService {
         }
 
         // 1. Send Update Transaction to Blockchain (using DTO fields)
-        rentalContract.updateProperty(
-                BigInteger.valueOf(onChainId),
-                dto.fullAddress(),
-                dto.description(),
-                BigInteger.valueOf(dto.rentPerMonth()),
-                BigInteger.valueOf(dto.securityDeposit()),
-                dto.isAvailable()
-        ).send();
+//        rentalContract.updateProperty(
+//                BigInteger.valueOf(onChainId),
+//                dto.fullAddress(),
+//                dto.description(),
+//                BigInteger.valueOf(dto.rentPerMonth()),
+//                BigInteger.valueOf(dto.securityDeposit()),
+//                dto.isAvailable()
+//        ).send();
 
         // 2. Update Off-Chain Data
         property.setTitle(dto.title()); //
@@ -174,15 +170,15 @@ public class PropertyService {
             throw new SecurityException("Caller is not the property owner.");
         }
 
-        Long onChainId = property.getOnChainId();
-        if (onChainId == null) {
-            // If not on chain, just delete it locally
-            propertyRepository.delete(property);
-            return;
-        }
-
-        // 1. Send Delist Transaction to Blockchain
-        rentalContract.delistProperty(BigInteger.valueOf(onChainId)).send();
+//        Long onChainId = property.getOnChainId();
+//        if (onChainId == null) {
+//            // If not on chain, just delete it locally
+//            propertyRepository.delete(property);
+//            return;
+//        }
+//
+//        // 1. Send Delist Transaction to Blockchain
+//        rentalContract.delistProperty(BigInteger.valueOf(onChainId)).send();
 
         // 2. Update Off-Chain Data
         property.setIsActive(false);

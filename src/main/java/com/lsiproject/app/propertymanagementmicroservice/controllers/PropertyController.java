@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
 public class PropertyController {
 
     private final PropertyService propertyService;
-    private final PropertyMapper propertyMapper; // Inject the mapper
+    private final PropertyMapper propertyMapper;
 
     // --- CREATE ---
 
