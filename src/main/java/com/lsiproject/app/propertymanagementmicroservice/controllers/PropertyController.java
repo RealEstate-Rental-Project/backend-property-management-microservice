@@ -60,9 +60,17 @@ public class PropertyController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<List<Property>> searchProperties(@RequestBody PropertySearchDTO searchDTO) {
+    public ResponseEntity<List<PropertyResponseDTO>> searchProperties(@RequestBody PropertySearchDTO searchDTO) {
         List<Property> properties = propertyService.searchProperties(searchDTO);
-        return ResponseEntity.ok(properties);
+
+        List<PropertyResponseDTO> responseDto = new ArrayList<>();
+
+        for(Property prop : properties){
+            PropertyResponseDTO newResponseDto = propertyMapper.toDto(prop);
+            responseDto.add(newResponseDto);
+        }
+
+        return ResponseEntity.ok(responseDto);
     }
 
     // --- READ ---
