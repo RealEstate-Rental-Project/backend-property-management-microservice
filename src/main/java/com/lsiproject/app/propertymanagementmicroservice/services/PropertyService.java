@@ -230,6 +230,10 @@ public class PropertyService {
         return propertyRepository.findTop3ByIsActiveTrueAndIsAvailableTrueOrderByCreatedAtDesc();
     }
 
+    public List<Property> getPropertiesByOwnerId(Long ownerId) {
+        return propertyRepository.findAllByOwnerId(ownerId);
+    }
+
 
     /**
      * TEMPORARY FUNCTION FOR TESTING WEB3J CONNECTIVITY.

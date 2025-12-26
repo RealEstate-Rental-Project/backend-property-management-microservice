@@ -138,6 +138,34 @@ public class PropertyController {
         }
     }
 
+    /**
+     * Retrieves all properties belonging to the authenticated user.
+     * @param principal The authenticated user.
+     * @return List of the user's properties.
+     */
+    @GetMapping("/my-properties")
+    public ResponseEntity<List<PropertyResponseDTO>> getMyProperties(@AuthenticationPrincipal UserPrincipal principal) {
+        try {
+            // 1. Récupérer l'ID de l'utilisateur connecté depuis le token
+            Long currentUserId = principal.getIdUser();
+
+            // 2. Appeler le service
+            List<Property> properties = propertyService.getPropertiesByOwnerId(currentUserId);
+
+            // 3. Mapper vers les DTOs
+            List<PropertyResponseDTO> responseDto = new ArrayList<>();
+            for (Property prop : properties) {
+                responseDto.add(propertyMapper.toDto(prop));
+            }
+
+            return ResponseEntity.ok(responseDto);
+
+        } catch (Exception e) {
+            System.err.println("Failed to fetch user properties: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
 
     // --- UPDATE ---

@@ -12,5 +12,6 @@ public interface PropertyRepository extends JpaRepository<Property,Long>, JpaSpe
 
     boolean existsByIdPropertyAndIsAvailableTrue(Long id);
     List<Property> findTop3ByIsActiveTrueAndIsAvailableTrueOrderByCreatedAtDesc();
+    List<Property> findAllByOwnerId(Long ownerId);
 
 }
