@@ -28,6 +28,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         this.jwtUtil = jwtUtil;
     }
 
+    // Dans JwtAuthFilter.java
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -37,7 +39,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
 
-        // 1. Vérifier si le header Authorization est présent et au format Bearer
+        // 1. Pas de token ? On laisse passer (pour les endpoints publics comme /login ou /properties GET)
+        // Spring Security bloquera plus tard si l'endpoint est protégé.
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -45,32 +48,39 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         jwt = authHeader.substring(7);
 
-        // 2. Si un utilisateur n'est pas déjà authentifié dans le contexte Spring
+        // 2. Si un token est présent, on DOIT le valider
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // 3. Extraire les informations de l'utilisateur (sans validation de signature)
+            // On tente d'extraire l'utilisateur avec la validation stricte
             UserPrincipal userPrincipal = jwtUtil.extractUserPrincipal(jwt);
 
             if (userPrincipal != null) {
-
-                // 4. Créer le jeton d'authentification pour Spring Security
-                // Nous ne faisons pas de validation ici (le booléen 'isAuthenticated' est vrai par défaut)
+                // --- CAS SUCCÈS : Tout est présent ---
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userPrincipal,
-                        null, // Pas de mot de passe / credentials ici
+                        null,
                         userPrincipal.getAuthorities()
                 );
-
-                // 5. Ajouter les détails de la requête au jeton
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-
-                // 6. Placer l'objet UserPrincipal dans le contexte de sécurité
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+
+            } else {
+                // --- CAS ÉCHEC : Un champ manquait ou le token est pourri ---
+
+                // On log l'erreur serveur
+                System.err.println("Authentification échouée : Token invalide ou données manquantes (ID/Wallet/Role)");
+
+                // On construit la réponse d'erreur pour le client (Frontend)
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 401 Unauthorized
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\": \"Authentication Failed: Invalid Token\"}");
+
+                // CRUCIAL : On ne continue PAS la chaîne. Le Controller n'est jamais appelé.
+                return;
             }
         }
 
+        // On continue vers le contrôleur UNIQUEMENT si l'authentification a réussi
         filterChain.doFilter(request, response);
     }
 }

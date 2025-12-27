@@ -39,51 +39,55 @@ public class JwtUtil {
         }
     }
 
-    /**
-     * Adapté pour la structure spécifique du token OAuth2/OIDC fourni.
-     */
+    // Dans JwtUtil.java
+
     public UserPrincipal extractUserPrincipal(String token) {
         Map<String, Object> claims = extractClaimsFromPayload(token);
+
+        // 1. Si le payload est illisible
         if (claims == null) {
+            System.err.println("JWT Error: Payload illisible ou token malformé.");
             return null;
         }
 
         try {
-            // 1. Extraire l'adresse du portefeuille
-            // Le token contient "sub" et "wallet" avec la même valeur.
-            // On priorise "sub" car c'est le standard JWT.
+            // --- VALIDATION 1 : Wallet (Subject) ---
             String walletAddress = String.valueOf(claims.getOrDefault("sub", claims.get("wallet")));
-
-            // 2. Extraire l'ID (Format: "id": 1)
-            // Attention: claims.get("id") renvoie un Integer, on le convertit en String puis en Long pour la sécurité
-            Long idUser = null;
-            if (claims.get("id") != null) {
-                idUser = Long.valueOf(claims.get("id").toString());
+            if (walletAddress == null || walletAddress.isEmpty() || "null".equals(walletAddress)) {
+                System.err.println("JWT Error: Adresse Wallet manquante.");
+                return null; // On rejette
             }
 
-            // 3. Extraire le Rôle (Format: "role": "ROLE_USER")
+            // --- VALIDATION 2 : ID Utilisateur ---
+            // On s'assure que l'ID existe et qu'il n'est pas null
+            Object idObj = claims.get("id");
+            if (idObj == null) {
+                System.err.println("JWT Error: ID utilisateur manquant.");
+                return null; // On rejette
+            }
+            Long idUser = Long.valueOf(idObj.toString());
+
+            // --- VALIDATION 3 : Rôle ---
+            Object roleObj = claims.get("role");
+            if (roleObj == null || roleObj.toString().trim().isEmpty()) {
+                System.err.println("JWT Error: Rôle utilisateur manquant.");
+                return null; // On rejette
+            }
+
+            // Nettoyage du rôle (ex: ROLE_USER -> USER pour éviter ROLE_ROLE_USER)
+            String roleStr = roleObj.toString();
+            if (roleStr.startsWith("ROLE_")) {
+                roleStr = roleStr.replace("ROLE_", "");
+            }
             Set<String> roles = new HashSet<>();
-            Object roleClaim = claims.get("role");
+            roles.add(roleStr);
 
-            if (roleClaim != null) {
-                String roleStr = roleClaim.toString();
-
-                // IMPORTANT: Votre classe UserPrincipal ajoute déjà "ROLE_" dans son constructeur.
-                // Si le token contient déjà "ROLE_USER", UserPrincipal créerait "ROLE_ROLE_USER".
-                // Nous devons donc nettoyer la chaîne ici.
-                if (roleStr.startsWith("ROLE_")) {
-                    roleStr = roleStr.replace("ROLE_", "");
-                }
-                roles.add(roleStr);
-            }
-
-            // Note: Le token contient aussi 'email', vous pouvez modifier UserPrincipal pour le stocker si nécessaire.
-
+            // Si on arrive ici, TOUT est bon
             return new UserPrincipal(idUser, walletAddress, roles);
 
         } catch (Exception e) {
-            System.err.println("Erreur de conversion des Claims en UserPrincipal: " + e.getMessage());
-            e.printStackTrace(); // Utile pour le debug
+            // En cas d'erreur de conversion (ex: ID qui n'est pas un nombre)
+            System.err.println("JWT Error: Données corrompues - " + e.getMessage());
             return null;
         }
     }
