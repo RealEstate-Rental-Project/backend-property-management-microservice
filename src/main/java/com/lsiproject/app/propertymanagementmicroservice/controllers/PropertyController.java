@@ -43,7 +43,6 @@ public class PropertyController {
             @Valid @RequestBody PropertyCreationDTO dto,
             @AuthenticationPrincipal UserPrincipal principal) {
 
-        try {
             Long ownerId = principal.getIdUser();
             String ownerEthAddress = principal.getWalletAddress();
 
@@ -52,11 +51,6 @@ public class PropertyController {
             PropertyResponseDTO responseDto = propertyMapper.toDto(newProperty);
 
             return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
-        } catch (Exception e) {
-            System.err.println("Property creation failed: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .build();
-        }
     }
 
     @PostMapping("/search")

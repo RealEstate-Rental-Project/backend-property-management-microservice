@@ -75,7 +75,7 @@ public class PropertyService {
             PropertyCreationDTO dto,
             Long ownerId,
             String ownerEthAddress
-    ) throws Exception {
+    ) {
 
 
         Property property = new Property();
