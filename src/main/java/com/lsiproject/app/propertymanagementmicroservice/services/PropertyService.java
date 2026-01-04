@@ -1,7 +1,6 @@
 package com.lsiproject.app.propertymanagementmicroservice.services;
 
 import com.lsiproject.app.propertymanagementmicroservice.UpdateDTOs.PropertyUpdateDTO;
-import com.lsiproject.app.propertymanagementmicroservice.contract.RealEstateRental;
 import com.lsiproject.app.propertymanagementmicroservice.CreationDTOs.PropertyCreationDTO;
 import com.lsiproject.app.propertymanagementmicroservice.entities.Property;
 import com.lsiproject.app.propertymanagementmicroservice.repository.PropertyRepository;
@@ -27,15 +26,11 @@ import java.util.NoSuchElementException;
 public class PropertyService {
 
     private final PropertyRepository propertyRepository;
-    private final RealEstateRental rentalContract;
     private final SupabaseStorageService storageService;
     private final RoomService roomService;
 
     public PropertyService(
             PropertyRepository propertyRepository,
-            Web3j web3j,
-            Credentials credentials,
-            StaticGasProvider gasProvider,
             RoomService roomService,
             @Value("${contract.rental.address}") String contractAddress,
             SupabaseStorageService storageService
@@ -43,10 +38,7 @@ public class PropertyService {
         this.propertyRepository = propertyRepository;
         this.roomService = roomService;
 
-        // Load the deployed contract wrapper
-        this.rentalContract = RealEstateRental.load(
-                contractAddress, web3j, credentials, gasProvider
-        );
+
         this.storageService = storageService;
     }
 
