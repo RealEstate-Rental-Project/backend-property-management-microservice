@@ -1,11 +1,21 @@
 package com.lsiproject.app.propertymanagementmicroservice.services;
 
+import com.lsiproject.app.propertymanagementmicroservice.DTOs.PropertyRecommendationRequestDTO;
+import com.lsiproject.app.propertymanagementmicroservice.DTOs.PropertyRecommendationResponseDTO;
+import com.lsiproject.app.propertymanagementmicroservice.DTOs.UserManagementDto;
+import com.lsiproject.app.propertymanagementmicroservice.Enums.TypeOfRental;
+import com.lsiproject.app.propertymanagementmicroservice.ResponseDTOs.PropertyResponseDTO;
 import com.lsiproject.app.propertymanagementmicroservice.UpdateDTOs.PropertyUpdateDTO;
 import com.lsiproject.app.propertymanagementmicroservice.contract.RealEstateRental;
 import com.lsiproject.app.propertymanagementmicroservice.CreationDTOs.PropertyCreationDTO;
 import com.lsiproject.app.propertymanagementmicroservice.entities.Property;
+import com.lsiproject.app.propertymanagementmicroservice.mappers.PropertyMapper;
+import com.lsiproject.app.propertymanagementmicroservice.openFeignClients.PropertyRecommendationModel;
+import com.lsiproject.app.propertymanagementmicroservice.openFeignClients.UserManagementMicroService;
 import com.lsiproject.app.propertymanagementmicroservice.repository.PropertyRepository;
 import com.lsiproject.app.propertymanagementmicroservice.searchDTOs.PropertySearchDTO;
+import com.lsiproject.app.propertymanagementmicroservice.security.UserPrincipal;
+import com.lsiproject.app.propertymanagementmicroservice.wrappers.PropertyRecommendationResponseWrapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,9 +25,12 @@ import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.tx.gas.StaticGasProvider;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 /**
  * Service to manage property CRUD operations, synchronizing off-chain data (MySQL)
@@ -30,6 +43,10 @@ public class PropertyService {
     private final RealEstateRental rentalContract;
     private final SupabaseStorageService storageService;
     private final RoomService roomService;
+    private final UserManagementMicroService userManagementClient;
+    private final PropertyRecommendationModel recommendationClient;
+    private final PropertyMapper propertyMapper;
+
 
     public PropertyService(
             PropertyRepository propertyRepository,
@@ -38,7 +55,11 @@ public class PropertyService {
             StaticGasProvider gasProvider,
             RoomService roomService,
             @Value("${contract.rental.address}") String contractAddress,
-            SupabaseStorageService storageService
+            SupabaseStorageService storageService,
+            UserManagementMicroService userManagementClient,
+            PropertyRecommendationModel recommendationClient,
+            PropertyMapper propertyMapper
+
     ) {
         this.propertyRepository = propertyRepository;
         this.roomService = roomService;
@@ -48,6 +69,10 @@ public class PropertyService {
                 contractAddress, web3j, credentials, gasProvider
         );
         this.storageService = storageService;
+
+        this.userManagementClient = userManagementClient;
+        this.recommendationClient = recommendationClient;
+        this.propertyMapper = propertyMapper;
     }
 
     /**
@@ -176,6 +201,21 @@ public class PropertyService {
         propertyRepository.save(property);
     }
 
+    public void updateAvailabilityToTrue(Long id) {
+        Property property = propertyRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        property.setIsAvailable(true);
+        propertyRepository.save(property);
+    }
+
+    public TypeOfRental getTypeOfRental(Long id) {
+        Property property = propertyRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        return property.getTypeOfRental();
+    }
+
 
     /**
      * Deletes a property by delisting it on-chain and marking it inactive in the database.
@@ -230,6 +270,70 @@ public class PropertyService {
 
 
         return property;
+    }
+
+
+    public List<PropertyResponseDTO> getRecommendedProperties(UserPrincipal principal) {
+        // 1. Get User profile from UserManagement service
+        UserManagementDto userProfile;
+        try {
+            userProfile = userManagementClient.getUserById(principal.getIdUser());
+        } catch (Exception e) {
+            System.err.println("Failed to fetch user profile: " + e.getMessage());
+            return new ArrayList<>(); // Or return getMostRecentProperties() converted to DTOs
+        }
+
+        if (userProfile == null) {
+            return new ArrayList<>();
+        }
+
+        // 2. Map User profile to AI Request DTO
+        PropertyRecommendationRequestDTO request = new PropertyRecommendationRequestDTO(
+                userProfile.getTargetRent() != null ? BigDecimal.valueOf(userProfile.getTargetRent()) : BigDecimal.ZERO,
+                userProfile.getMinTotalRooms(),
+                userProfile.getTargetSqft(),
+                userProfile.getSearchLatitude(),
+                userProfile.getSearchLongitude(),
+                userProfile.getPreferredPropertyType(),
+                userProfile.getPreferredRentalType(),
+                1, // Default user_id placeholder if needed by Python model
+                false
+        );
+
+        System.out.println("Request sent to the AI model: " + request);
+
+        // 3. Get recommended property IDs from AI Service (Using Wrapper)
+        List<PropertyRecommendationResponseDTO> aiResponses;
+        try {
+            // CHANGED: Use the wrapper to handle {"recommendations": [...]}
+            PropertyRecommendationResponseWrapper wrapper = recommendationClient.recommend_properties(request);
+
+            if (wrapper == null || wrapper.getRecommendations() == null || wrapper.getRecommendations().isEmpty()) {
+                System.out.println("AI Model returned no recommendations.");
+                return new ArrayList<>();
+            }
+            aiResponses = wrapper.getRecommendations();
+
+        } catch (Exception e) {
+            System.err.println("Recommendation AI Service failed: " + e.getMessage());
+            return new ArrayList<>();
+        }
+
+
+        // 4. Extract IDs
+        List<Long> propertyIds = aiResponses.stream()
+                .map(PropertyRecommendationResponseDTO::getProperty_id)
+                .collect(Collectors.toList());
+
+        // 5. Fetch properties from DB
+        List<Property> properties = propertyRepository.findAllByIdPropertyIn(propertyIds);
+
+        System.out.println(properties.toString());
+
+        // 6. Map to Response DTOs using your PropertyMapper
+        return properties.stream()
+                .map(propertyMapper::toDto)
+                .collect(Collectors.toList());
     }
 
 }

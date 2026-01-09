@@ -1,5 +1,6 @@
 package com.lsiproject.app.propertymanagementmicroservice.exceptions;
 
+import feign.FeignException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -133,5 +134,14 @@ public class GlobalExceptionHandler {
         body.put("message", ex.getMessage());
         body.put("timestamp", LocalDateTime.now());
         return ResponseEntity.status(500).body(body);
+    }
+    @ExceptionHandler(FeignException.NotFound.class)
+    public ResponseEntity<Map<String, Object>> handleFeignNotFound(FeignException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", 404);
+        body.put("error", "REMOTE_RESOURCE_NOT_FOUND");
+        body.put("message", "User not found in User Management service");
+        body.put("timestamp", LocalDateTime.now());
+        return ResponseEntity.status(404).body(body);
     }
 }

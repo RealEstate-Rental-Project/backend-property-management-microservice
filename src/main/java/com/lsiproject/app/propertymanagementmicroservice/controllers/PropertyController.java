@@ -1,6 +1,7 @@
 package com.lsiproject.app.propertymanagementmicroservice.controllers;
 
 import com.lsiproject.app.propertymanagementmicroservice.CreationDTOs.PropertyCreationDTO;
+import com.lsiproject.app.propertymanagementmicroservice.Enums.TypeOfRental;
 import com.lsiproject.app.propertymanagementmicroservice.ResponseDTOs.PropertyResponseDTO;
 import com.lsiproject.app.propertymanagementmicroservice.UpdateDTOs.AvailabilityDTO;
 import com.lsiproject.app.propertymanagementmicroservice.UpdateDTOs.PropertyUpdateDTO;
@@ -215,6 +216,22 @@ public class PropertyController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/{id}/availabilityToTrue")
+    public ResponseEntity<Void> updateAvailabilityToTrue(
+            @PathVariable Long id) {
+
+        propertyService.updateAvailabilityToTrue(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/TypeOfRental")
+    public ResponseEntity<TypeOfRental> getTypeOfRental(
+            @PathVariable Long id) {
+
+
+        return ResponseEntity.ok(propertyService.getTypeOfRental(id));
+    }
+
 
     // --- DELETE ---
 
@@ -239,6 +256,18 @@ public class PropertyController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         } catch (Exception e) {
             System.err.println("Property deletion failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/recommendations")
+    public ResponseEntity<List<PropertyResponseDTO>> getRecommendations(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        try {
+            List<PropertyResponseDTO> recommendations = propertyService.getRecommendedProperties(principal);
+            return ResponseEntity.ok(recommendations);
+        } catch (Exception e) {
+            System.err.println("Recommendation request failed: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
