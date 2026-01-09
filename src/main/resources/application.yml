@@ -1,0 +1,19 @@
+server:
+  port: 8084
+
+spring:
+  profiles:
+    active: dev
+  application:
+    name: property-microservice  # correspond au nom du fichier dans le repo config
+  config:
+    import: "optional:configserver:http://localhost:8888"
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,env,refresh
+  security:
+    enabled: false

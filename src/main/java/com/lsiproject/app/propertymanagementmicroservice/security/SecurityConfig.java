@@ -39,7 +39,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/property-microservice/rooms/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/property-microservice/properties/room-images/**").permitAll()
                         .requestMatchers("/api/property-microservice/properties/search").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
                         .anyRequest().authenticated()
+                )
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin())
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
@@ -56,14 +60,10 @@ public class SecurityConfig {
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowCredentials(true);
-        config.setAllowedOrigins(List.of(
-                "http://localhost:4200",    // Angular
-                "http://localhost:3000",    // React
-                "http://localhost:5173"     // Vite
-        ));
+        config.setAllowedOriginPatterns(List.of("*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Authorization"));
+        config.setExposedHeaders(List.of("Authorization", "X-Total-Count", "Link"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
