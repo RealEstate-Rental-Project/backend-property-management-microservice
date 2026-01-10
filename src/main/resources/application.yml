@@ -3,7 +3,7 @@ server:
 
 spring:
   profiles:
-    active: prod
+    active: dev
   application:
     name: property-microservice  # correspond au nom du fichier dans le repo config
   config:
