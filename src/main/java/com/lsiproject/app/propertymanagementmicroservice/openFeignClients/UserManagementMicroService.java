@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(
         name = "UserManagementMicroService",
-        url = "http://localhost:8081",
+        url = "${userManagement.service.url}",
         configuration = FeignConfig.class
 )
 public interface UserManagementMicroService {
