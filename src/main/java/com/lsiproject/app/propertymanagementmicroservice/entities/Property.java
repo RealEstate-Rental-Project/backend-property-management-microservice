@@ -43,8 +43,9 @@ public class Property {
     private Double latitude;
     private String description;
     private Integer SqM;
-    @Formula("(SELECT COUNT(r.idRoom) FROM rooms r WHERE r.property_id = idProperty)")
+    @Formula("(SELECT COUNT(r.id_room) FROM rooms r WHERE r.property_id = id_property)")
     private Integer total_Rooms;
+
     private PropertyType typeOfProperty;
 
     @Enumerated(EnumType.STRING)
