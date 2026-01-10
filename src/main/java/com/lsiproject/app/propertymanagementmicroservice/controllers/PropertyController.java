@@ -2,6 +2,8 @@ package com.lsiproject.app.propertymanagementmicroservice.controllers;
 
 import com.lsiproject.app.propertymanagementmicroservice.CreationDTOs.PropertyCreationDTO;
 import com.lsiproject.app.propertymanagementmicroservice.Enums.TypeOfRental;
+import com.lsiproject.app.propertymanagementmicroservice.ResponseDTOs.HeatmapResponseDTO;
+import com.lsiproject.app.propertymanagementmicroservice.ResponseDTOs.PricePredictionResponseDTO;
 import com.lsiproject.app.propertymanagementmicroservice.ResponseDTOs.PropertyResponseDTO;
 import com.lsiproject.app.propertymanagementmicroservice.UpdateDTOs.AvailabilityDTO;
 import com.lsiproject.app.propertymanagementmicroservice.UpdateDTOs.PropertyUpdateDTO;
@@ -269,6 +271,36 @@ public class PropertyController {
         } catch (Exception e) {
             System.err.println("Recommendation request failed: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping("/heatmap")
+    public ResponseEntity<HeatmapResponseDTO> getMarketHeatmap(@RequestParam TypeOfRental type) {
+        try {
+            HeatmapResponseDTO response = propertyService.getHeatmap(type);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("Heatmap request failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+    }
+
+    /**
+     * Predicts the price for a property using the ML-PriceSuggestion service.
+     * Automatically selects monthly or daily prediction based on the property's rental type.
+     * @param id The property ID
+     * @return Price prediction response with price in Wei and ETH
+     */
+    @GetMapping("/{id}/predict-price")
+    public ResponseEntity<PricePredictionResponseDTO> predictPrice(@PathVariable Long id) {
+        try {
+            PricePredictionResponseDTO prediction = propertyService.getPricePrediction(id);
+            return ResponseEntity.ok(prediction);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            System.err.println("Price prediction failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
         }
     }
 }
