@@ -45,6 +45,7 @@ public class Property {
     private Integer SqM;
     @Formula("(SELECT COUNT(r.idRoom) FROM rooms r WHERE r.property_id = idProperty)")
     private Integer total_Rooms;
+
     private PropertyType typeOfProperty;
 
     @Enumerated(EnumType.STRING)
