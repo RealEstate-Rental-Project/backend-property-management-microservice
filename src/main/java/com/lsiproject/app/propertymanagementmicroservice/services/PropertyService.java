@@ -1,14 +1,19 @@
 package com.lsiproject.app.propertymanagementmicroservice.services;
 
+import com.lsiproject.app.propertymanagementmicroservice.DTOs.PricePredictionRequestDTO;
 import com.lsiproject.app.propertymanagementmicroservice.DTOs.PropertyRecommendationRequestDTO;
 import com.lsiproject.app.propertymanagementmicroservice.DTOs.PropertyRecommendationResponseDTO;
 import com.lsiproject.app.propertymanagementmicroservice.DTOs.UserManagementDto;
 import com.lsiproject.app.propertymanagementmicroservice.Enums.TypeOfRental;
+import com.lsiproject.app.propertymanagementmicroservice.ResponseDTOs.HeatmapResponseDTO;
+import com.lsiproject.app.propertymanagementmicroservice.ResponseDTOs.PricePredictionResponseDTO;
 import com.lsiproject.app.propertymanagementmicroservice.ResponseDTOs.PropertyResponseDTO;
 import com.lsiproject.app.propertymanagementmicroservice.UpdateDTOs.PropertyUpdateDTO;
 import com.lsiproject.app.propertymanagementmicroservice.CreationDTOs.PropertyCreationDTO;
 import com.lsiproject.app.propertymanagementmicroservice.entities.Property;
 import com.lsiproject.app.propertymanagementmicroservice.mappers.PropertyMapper;
+import com.lsiproject.app.propertymanagementmicroservice.openFeignClients.HeatMapPredictionClient;
+import com.lsiproject.app.propertymanagementmicroservice.openFeignClients.PriceSuggestionClient;
 import com.lsiproject.app.propertymanagementmicroservice.openFeignClients.PropertyRecommendationModel;
 import com.lsiproject.app.propertymanagementmicroservice.openFeignClients.UserManagementMicroService;
 import com.lsiproject.app.propertymanagementmicroservice.repository.PropertyRepository;
@@ -20,9 +25,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import org.web3j.crypto.Credentials;
-import org.web3j.protocol.Web3j;
-import org.web3j.tx.gas.StaticGasProvider;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -44,6 +46,8 @@ public class PropertyService {
     private final UserManagementMicroService userManagementClient;
     private final PropertyRecommendationModel recommendationClient;
     private final PropertyMapper propertyMapper;
+    private final HeatMapPredictionClient heatMapPredictionClient;
+    private final PriceSuggestionClient priceSuggestionClient;
 
 
     public PropertyService(
@@ -53,7 +57,9 @@ public class PropertyService {
             SupabaseStorageService storageService,
             UserManagementMicroService userManagementClient,
             PropertyRecommendationModel recommendationClient,
-            PropertyMapper propertyMapper
+            PropertyMapper propertyMapper,
+            HeatMapPredictionClient heatMapPredictionClient,
+            PriceSuggestionClient priceSuggestionClient
 
     ) {
         this.propertyRepository = propertyRepository;
@@ -65,6 +71,8 @@ public class PropertyService {
         this.userManagementClient = userManagementClient;
         this.recommendationClient = recommendationClient;
         this.propertyMapper = propertyMapper;
+        this.heatMapPredictionClient = heatMapPredictionClient;
+        this.priceSuggestionClient = priceSuggestionClient;
     }
 
     /**
@@ -326,6 +334,51 @@ public class PropertyService {
         return properties.stream()
                 .map(propertyMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public HeatmapResponseDTO getHeatmap(TypeOfRental type) {
+        try {
+            return heatMapPredictionClient.getMarketHeatmap(type);
+        } catch (Exception e) {
+            System.err.println("Failed to fetch heatmap from AI service: " + e.getMessage());
+            throw new RuntimeException("AI Service unavailable");
+        }
+    }
+
+    /**
+     * Gets price prediction for a property from the ML-PriceSuggestion service.
+     * Automatically selects monthly or daily prediction endpoint based on property's rental type.
+     * @param propertyId The ID of the property to predict price for
+     * @return Price prediction response from ML service
+     * @throws NoSuchElementException if property not found
+     */
+    public PricePredictionResponseDTO getPricePrediction(Long propertyId) {
+        // 1. Retrieve property from database
+        Property property = propertyRepository.findById(propertyId)
+                .orElseThrow(() -> new NoSuchElementException("Property not found."));
+
+        // 2. Map property data to ML request DTO
+        PricePredictionRequestDTO request = new PricePredictionRequestDTO();
+        request.setCity(property.getCity());
+        request.setCountry(property.getCountry());
+        request.setLongitude(property.getLongitude());
+        request.setLatitude(property.getLatitude());
+        request.setSqm(property.getSqM());
+        request.setTotal_rooms(property.getTotal_Rooms());
+        request.setNombre_etoiles(property.getNombreEtoiles());
+
+        // 3. Call appropriate ML endpoint based on rental type
+        try {
+            if (property.getTypeOfRental() == TypeOfRental.DAILY) {
+                return priceSuggestionClient.predictDailyPrice(request);
+            } else {
+                // Default to monthly prediction
+                return priceSuggestionClient.predictMonthlyPrice(request);
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to fetch price prediction from ML service: " + e.getMessage());
+            throw new RuntimeException("ML Price Suggestion Service unavailable");
+        }
     }
 
 }

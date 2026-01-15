@@ -2,5 +2,6 @@
 
 standardBackendPipeline(
     appName: 'property-management-service',
-    registry: 'yassinekamouss'
+    registry: 'yassinekamouss',
+     sonarProjectKey: 'property-microservice'
 )
