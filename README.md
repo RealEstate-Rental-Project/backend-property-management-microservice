@@ -21,7 +21,50 @@ The Property Management Microservice is a Spring Boot-based REST API service tha
 
 ## 🏗️ Architecture
 
-![Architecture Diagram](C:/Users/DELL/.gemini/antigravity/brain/767bb748-8405-4e97-a890-989b3409fc01/architecture_diagram_1768524175183.png)
+```mermaid
+graph TB
+    subgraph External["External Services"]
+        UMS["User Management<br/>Microservice"]
+        PRM["Property Recommendation<br/>Model (ML)"]
+        PSS["Price Suggestion<br/>Service (ML)"]
+        HMS["Heat Map Prediction<br/>Service (ML)"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        CFG["Config Server<br/>(Spring Cloud Config)"]
+        GW["API Gateway<br/>(Routing)"]
+    end
+
+    subgraph Core["Property Management Microservice"]
+        JWT["JWT Security Layer"]
+        CTRL["Controllers<br/>(REST API)"]
+        SVC["Services<br/>(Business Logic)"]
+        FEIGN["OpenFeign Clients"]
+    end
+
+    subgraph Data["Data Layer"]
+        DB[("MySQL Database<br/>(JPA/Hibernate)")]
+        STORAGE[("Supabase Storage<br/>(Images)")]
+    end
+
+    CFG -->|Configuration| Core
+    GW -->|Requests| JWT
+    JWT -->|Authenticated| CTRL
+    CTRL -->|Business Logic| SVC
+    SVC -->|Persistence| DB
+    SVC -->|Image Storage| STORAGE
+    SVC -->|HTTP Calls| FEIGN
+    FEIGN -->|Get User Profile| UMS
+    FEIGN -->|Get Recommendations| PRM
+    FEIGN -->|Get Price Predictions| PSS
+    FEIGN -->|Get Market Heatmap| HMS
+
+    style Core fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
+    style External fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
+    style Infrastructure fill:#7F8C8D,stroke:#34495E,stroke-width:2px,color:#fff
+    style Data fill:#95A5A6,stroke:#5D6D7E,stroke-width:2px,color:#fff
+    style JWT fill:#E67E22,stroke:#BA6A14,stroke-width:2px,color:#fff
+```
 
 ### System Components
 
@@ -491,36 +534,6 @@ src/
 
 ---
 
-## 👨‍💻 Development Guide
-
-### Adding a New Property Field
-
-1. **Update Entity** (`entities/Property.java`)
-2. **Update DTOs** (Creation, Update, Response DTOs)
-3. **Update Mapper** (`mappers/PropertyMapper.java`)
-4. **Database Migration** (if using Flyway/Liquibase)
-
-### Adding a New Endpoint
-
-1. **Define method in Controller**
-2. **Implement business logic in Service**
-3. **Add security constraints** (if needed)
-4. **Update API documentation**
-
-### Testing
-
-Run all tests:
-```bash
-mvn test
-```
-
-Run specific test:
-```bash
-mvn test -Dtest=PropertyServiceTest
-```
-
----
-
 ## 📊 Monitoring & Observability
 
 ### Actuator Endpoints
@@ -572,6 +585,14 @@ For detailed API documentation with request/response examples, consider integrat
 ## 📞 Support
 
 For issues or questions, please contact the development team or create an issue in the repository.
+
+---
+
+## 🎯 Conclusion
+
+The Property Management Microservice is a production-ready, enterprise-grade solution for managing rental properties in a distributed microservices architecture. With seamless ML integrations, robust security, and comprehensive property management capabilities, it serves as the backbone of the real estate rental platform.
+
+For questions, contributions, or support, please reach out to the development team.
 
 ---
 
