@@ -350,9 +350,6 @@ The service uses Spring Cloud Config Server for centralized configuration. The f
 - `ml-price-suggestion.service.url`: Price Suggestion ML service URL
 - `heatmap.service.url`: Heat Map service URL
 
-#### **JWT Configuration**
-- `jwt.secret`: Secret key for JWT signing
-- `jwt.expiration`: Token expiration time
 
 #### **Supabase Configuration**
 - `supabase.url`: Supabase project URL
@@ -362,32 +359,6 @@ The service uses Spring Cloud Config Server for centralized configuration. The f
 #### **Config Server**
 - `CONFIG_SERVER_URL`: Config server location (default: `http://localhost:8888`)
 
-### Application Properties
-
-**File:** `src/main/resources/application.yml`
-
-```yaml
-server:
-  port: 8084
-
-spring:
-  profiles:
-    active: prod
-  application:
-    name: property-microservice
-  config:
-    import: "optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}"
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus,env,refresh
-  security:
-    enabled: false
-```
-
----
 
 ## 🚀 Setup and Installation
 
@@ -558,36 +529,6 @@ logging:
 ```
 
 ---
-
-## 📝 API Documentation
-
-For detailed API documentation with request/response examples, consider integrating:
-- **Springdoc OpenAPI** for auto-generated Swagger UI
-- **Postman Collection** for API testing
-
----
-
-## 🤝 Contributing
-
-1. Create a feature branch from `main`
-2. Make changes following coding standards
-3. Write/update tests
-4. Submit pull request with clear description
-
----
-
-## 📄 License
-
-[Specify your license here]
-
----
-
-## 📞 Support
-
-For issues or questions, please contact the development team or create an issue in the repository.
-
----
-
 ## 🎯 Conclusion
 
 The Property Management Microservice is a production-ready, enterprise-grade solution for managing rental properties in a distributed microservices architecture. With seamless ML integrations, robust security, and comprehensive property management capabilities, it serves as the backbone of the real estate rental platform.
