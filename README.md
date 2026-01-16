@@ -59,11 +59,11 @@ graph TB
     FEIGN -->|Get Price Predictions| PSS
     FEIGN -->|Get Market Heatmap| HMS
 
-    style Core fill:#4A90E2,stroke:#2E5C8A,stroke-width:3px,color:#fff
-    style External fill:#9B59B6,stroke:#6C3483,stroke-width:2px,color:#fff
-    style Infrastructure fill:#7F8C8D,stroke:#34495E,stroke-width:2px,color:#fff
-    style Data fill:#95A5A6,stroke:#5D6D7E,stroke-width:2px,color:#fff
-    style JWT fill:#E67E22,stroke:#BA6A14,stroke-width:2px,color:#fff
+    style Core fill:#2C3E50,stroke:#1A252F,stroke-width:3px,color:#ECF0F1
+    style External fill:#16A085,stroke:#117A65,stroke-width:2px,color:#FFFFFF
+    style Infrastructure fill:#34495E,stroke:#212F3C,stroke-width:2px,color:#ECF0F1
+    style Data fill:#5D6D7E,stroke:#424949,stroke-width:2px,color:#FFFFFF
+    style JWT fill:#E74C3C,stroke:#C0392B,stroke-width:2px,color:#FFFFFF
 ```
 
 ### System Components
